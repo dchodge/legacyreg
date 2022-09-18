@@ -10,7 +10,7 @@ info3_levels <- c("Vac3", "BA1", "BA2", "BA5")
 file_name_type <- c("vac3", "ba1", "ba2", "ba5")
 
 for (i in 1:4) { # The strains 
-    for (j in 1:4) { # The types
+    for (j in 1:4) { # The types   
         for (exposure in c("naive", "exposed")) {
             info3_levels_str <- paste0(info3_levels[j], " ", exposure)
             file_name_type_2 <- paste0(file_name_type[j], "_", exposure)

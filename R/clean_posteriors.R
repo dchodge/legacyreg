@@ -78,5 +78,46 @@ save(post_pred_fitted_exposed, file = here::here("data", "df", "fitted_lines_exp
 
 require(rstan)
 
-# Table of summarise here
-temp_stanfit$diagnostic_summary()
+# Make a dataframe of fit criteria
+
+get_fitted_diagnostics <- function(exposure) {
+    diag_fitted_list <- list(); k <- 1
+    for (i in 1:4) {
+        for (j in 1:4) {
+            
+                info3_levels_str <- paste0(info3_levels[j], " ", exposure)
+                file_name_type_2 <- paste0(file_name_type[j], "_", exposure)
+
+                if (exposure == "naive") {
+                    titre_all_trim <- titre_all_naive %>% filter(info2 == info2_levels[i], type == info3_levels_str) %>% filter(!is.na(info3))
+                } else {
+                    titre_all_trim <- titre_all_exposed %>% filter(info2 == info2_levels[i], type == info3_levels_str) %>% filter(!is.na(info3))
+                }
+                temp_stanfit <- readRDS(here::here("outputs", "stanfits", paste0("fit_", file_name_var[i], "_", file_name_type_2, ".Rdata")))
+                fit_diagnostics <- temp_stanfit$diagnostic_summary()
+
+                row_entries <- c( paste0("fit_", file_name_var[i], "_", file_name_type_2), 
+                    temp_stanfit$diagnostic_summary()$num_divergent,
+                    temp_stanfit$diagnostic_summary()$num_max_treedepth,
+                    temp_stanfit$diagnostic_summary()$ebfmi
+                )
+                names(row_entries) <- c("model",
+                    paste("num_divergent", 1:4, sep = "_"),
+                    paste("num_max_treedepth", 1:4, sep = "_"),
+                    paste("ebfmi", 1:4, sep = "_")
+                    )
+
+                diag_fitted_list[[k]] <- as.data.frame(row_entries) %>% t %>% as.data.frame
+                k <- k + 1
+        }
+    }
+    diag_fitted <- diag_fitted_list %>% bind_rows
+    row.names(diag_fitted) <- 1:16
+    diag_fitted
+}
+
+df_fitted_naive <- get_fitted_diagnostics("naive")
+df_fitted_exposed <- get_fitted_diagnostics("exposed")
+
+save(df_fitted_naive, file = here::here("outputs", "stanfits", "diagnostic_naive.RData"))
+save(df_fitted_exposed, file = here::here("outputs", "stanfits", "diagnostic_exposed.RData"))
