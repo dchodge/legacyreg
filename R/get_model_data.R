@@ -72,8 +72,8 @@ get_time_until_inf <- function(ids, bleed_df, vac_df, inf_df)  {
 }
 
 
-times_post_dose3_exposed <- get_time_until_inf(dose3_exposed_ids, dose3_bleed, dose3_vac, inf_df)
-times_post_dose3_naive <- get_time_until_inf(dose3_naive_ids, dose3_bleed, dose3_vac, inf_df)
+times_post_dose3_exposed <- get_time_until_inf(dose3_exposed_ids, dose3_bleed, dose3_vac, dose3_inf)
+times_post_dose3_naive <- get_time_until_inf(dose3_naive_ids, dose3_bleed, dose3_vac, dose3_inf)
 
 
 ###################################################################################
