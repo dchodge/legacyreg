@@ -150,7 +150,7 @@ post_fitted_mean <- post_fitted %>% group_by(type, info2, exposure_type) %>%
 post_fitted_mean_wide <- post_fitted_mean %>% ungroup %>% 
     pivot_wider(names_from = exposure_type, values_from = c(wane_s:boost_s ))
 
-uniFill <- c("Infection naive" = "green", "Previously infected" = "red")
+uniFill <- c("Infection naive" = "#1A85FF", "Previously infected" = "#D41159")
 uniShape <- c("Infection naive" = 21, "Previously infected" = 22)
 
 
