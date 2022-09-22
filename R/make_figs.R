@@ -152,7 +152,10 @@ post_fitted_mean_wide <- post_fitted_mean %>% ungroup %>%
 
 uniFill <- c("Infection naive" = "#1A85FF", "Previously infected" = "#D41159")
 uniShape <- c("Infection naive" = 21, "Previously infected" = 22)
+uniShape <- c("Post third vaccine dose" = 21, "Post BA1 infection" = 22, "Post BA2 infection" = 23)
 
+post_fitted_mean <- post_fitted_mean %>% mutate(boost_abs_cen = if_else(boost_abs < 7, boost_abs, 7)) 
+post_fitted_mean_cens_dist <- post_fitted_mean %>% mutate(diff = boost_abs - boost_abs_cen) %>% filter(diff > 0)
 
 ############################
 ### Without uncertainty ###
@@ -160,30 +163,41 @@ uniShape <- c("Infection naive" = 21, "Previously infected" = 22)
 # Relative boosting
 post_fitted_mean %>% 
     ggplot() + 
-        geom_point(aes(x =  2^wane_s, y = 2^boost, shape = exposure_type, fill = exposure_type), size = 4, alpha = 0.8, 
-            color = "black") + 
-        facet_grid(cols = vars(info2), rows = vars(type)) + 
+        geom_point(aes(x =  2^wane_s, y = 2^boost, shape = type, fill = exposure_type), size = 4, alpha = 0.8, 
+            color = "black")  + 
+        facet_grid(cols = vars(info2)) + 
         scale_fill_manual(values = uniFill) +
         scale_shape_manual(values = uniShape) +
-        guides(fill = guide_legend(override.aes = list(shape = c(21, 22)))) +
-        scale_y_continuous(trans = "log2", breaks = 2 ^ (-7:7), limits = c(1, 128)) +
+        guides(fill = guide_legend(override.aes = list(shape = c(21, 21)))) +
+        scale_y_continuous(trans = "log2", breaks = 2 ^ (-7:7)) +
         scale_x_continuous(trans = "log2", breaks = 2 ^ seq(-7, 1, 0.5), labels = round(2 ^ seq(-7, 1, 0.5), 2 ), limits = c(0.3, 1) ) +
-        guides(color = "none", shape = "none") +
+        guides(color = "none") +
         theme_bw() + labs(x = "Titre wane 100 days after peak (GTR)", y = "Titre boost at peak (GTR)", fill = "Exposure history")
+ggsave(here::here("outputs", "figs", "main_fig_faceted_boost.png"), width = 9, height = 7)
 
 # Absolute boosting
 post_fitted_mean %>% 
     ggplot() + 
-        geom_point(aes(x =  2^wane_s, y = 5 * 2^boost_abs, shape = exposure_type, fill = exposure_type), size = 4, alpha = 0.8, 
-            color = "black") + 
-        facet_grid(cols = vars(info2), rows = vars(type)) + 
+        geom_hline(yintercept = 5 * 2^7, linetype = "dotted") +
+        geom_segment(data = post_fitted_mean_cens_dist,
+            aes(x =  2^wane_s, y = 5 * 2^boost_abs_cen, xend =  2^wane_s, yend = 5 * 2^(boost_abs)),  
+            size = 0.5, alpha = 0.8, linetype = "dashed",
+            color = "gray15") +
+        geom_point(data = post_fitted_mean_cens_dist,
+            aes(x =  2^wane_s, y = 5 * 2^boost_abs),  
+            size = 5, alpha = 0.8, shape = 4,
+            color = "gray15") +
+        geom_point(aes(x =  2^wane_s, y = 5 * 2^boost_abs_cen, shape = type, fill = exposure_type), size = 4, alpha = 0.8, 
+            color = "black") +
+        facet_grid(cols = vars(info2)) + 
         scale_fill_manual(values = uniFill) +
         scale_shape_manual(values = uniShape) +
-        guides(fill = guide_legend(override.aes = list(shape = c(21, 22)))) +
+        guides(fill = guide_legend(override.aes = list(shape = c(21, 21)))) +
         scale_y_continuous(trans = "log2", breaks = 2 ^ (1:7) * 5, labels = labs_plot_y) + scale_x_continuous(trans = "log2", breaks = 2 ^ seq(-7, 1, 0.5), labels = round(2 ^ seq(-7, 1, 0.5), 2 ), limits = c(0.3, 1) ) +
-        guides(color = "none", shape = "none") +
-        theme_bw() + labs(x = "Titre wane 100 days after peak (GTR)", y = "Titre value at peak", fill = "Exposure history")
-ggsave(here::here("outputs", "figs", "main_fig_faceted.png"))
+        guides(color = "none") +
+        theme_bw() + labs(x = "Titre wane 100 days after peak (GTR)", y = "Titre value at peak", fill = "Infection history", shape = "Exposure type")
+
+ggsave(here::here("outputs", "figs", "main_fig_faceted_titre.png"), width = 9, height = 7)
 
 ############################
 ### With uncertainty ###
@@ -211,8 +225,10 @@ post_fitted %>%
     ggplot() + 
         geom_density_2d(aes(x =  2^wane_s, y = 5 * 2^boost_abs, color = exposure_type), level = c(0.5, 0.95)) + 
         facet_grid(cols = vars(info2), rows = vars(type)) + 
-       geom_point(data = post_fitted_mean, aes(x =  2^wane_s, y = 5 * 2^boost_abs, shape = exposure_type, fill = exposure_type), size = 3, alpha = 0.8, 
-            color = "black") +
+        geom_segment(data = post_fitted_mean,
+            aes(x =  2^wane_s, y = 5 * 2^boost_abs_cen, xend =  2^wane_s, yend = 5 * 2^(boost_abs)),  
+            size = 0.1, alpha = 0.8, 
+            color = "gray") +
         scale_color_manual(values = uniFill) +
         scale_fill_manual(values = uniFill) +
         scale_shape_manual(values = uniShape) +
