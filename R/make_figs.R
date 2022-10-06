@@ -223,7 +223,6 @@ post_fitted %>%
 
 
 
-
 post_fitted %>% 
     ggplot() + 
         geom_point(aes(x = 2^wane_s, y = 2^boost, color = model), size = 0.1, alpha = 0.1) + 
@@ -246,4 +245,32 @@ ggsave(here::here("outputs", "figs", "main_fig_uncert.pdf"))
 names(post_fitted_mean_wide)
 
 
-ggsave(here::here("outputs", "figs", "main_fig.pdf"))
+save(post_pred_fitted_naive, file = here::here("data", "df", "fitted_lines_naive.RData"))
+save(post_pred_fitted_exposed, file = here::here("data", "df", "fitted_lines_exposed.RData"))
+
+naive_pred_post_plot <- post_pred_fitted_naive %>% filter(type != "BA5", info2 != "Omicron BA5") %>% mutate(hist = "naive")
+exposed_pred_post_plot <- post_pred_fitted_exposed %>% filter(type != "BA5",info2 != "Omicron BA5") %>% mutate(hist = "exposed")
+
+pred_post_plot <- bind_rows(naive_pred_post_plot, exposed_pred_post_plot)
+
+relabel_type <- c("Vac3" = "Post third vaccine dose", "BA1" = "Post BA1 infection", "BA2" = "Post BA2 infection")
+relabel_exposure_type <- c("naive" = "Infection naive", "exposed" = "Previously infected")
+
+pred_post_plot <- pred_post_plot %>% 
+    mutate(type = recode(type, !!!relabel_type)) %>%
+    mutate(hist = recode(hist, !!!relabel_exposure_type))
+
+
+labs_plot_y <- c("\u2264 40", "80", "160", "320", "640", "1280", "\u2265 2560")
+
+pred_post_plot %>% filter(t < 150) %>%
+    ggplot() +
+        geom_hline(yintercept = 5 * 2^7, linetype = "dashed", color = "gray30") + 
+        geom_line(aes(x = t, y = 5 * 2^fitted_val, color = type, linetype = hist), size = 1, alpha = 0.8) + 
+        facet_grid(cols = vars(info2)) + 
+        scale_linetype_manual(values = c("longdash", "solid")) +
+        scale_y_continuous(trans = "log2", breaks = 2 ^ (1:7) * 5, labels = labs_plot_y) + 
+        theme_bw() +
+        labs(x = "Time post exposure (days)", y = "Titre value", color = "Exposure type", linetype = "Infection history")
+
+
