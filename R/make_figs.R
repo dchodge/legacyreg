@@ -261,8 +261,8 @@ ggsave(here::here("outputs", "figs", "main_fig_uncert.pdf"))
 names(post_fitted_mean_wide)
 
 
-save(post_pred_fitted_naive, file = here::here("data", "df", "fitted_lines_naive.RData"))
-save(post_pred_fitted_exposed, file = here::here("data", "df", "fitted_lines_exposed.RData"))
+load(file = here::here("data", "df", "fitted_lines_naive.RData"))
+load(file = here::here("data", "df", "fitted_lines_exposed.RData"))
 
 naive_pred_post_plot <- post_pred_fitted_naive %>% filter(type != "BA5", info2 != "Omicron BA5") %>% mutate(hist = "naive")
 exposed_pred_post_plot <- post_pred_fitted_exposed %>% filter(type != "BA5",info2 != "Omicron BA5") %>% mutate(hist = "exposed")
@@ -276,17 +276,56 @@ pred_post_plot <- pred_post_plot %>%
     mutate(type = recode(type, !!!relabel_type)) %>%
     mutate(hist = recode(hist, !!!relabel_exposure_type))
 
+pred_post_plot <- pred_post_plot %>% unite("new_col", type, hist)
+
+relabel_type_new_cl <- 
+    c("Post third vaccine dose_Infection naive" = "Third dose after 2 previous antigen exposures", #\n (All vaccines)", 
+     "Post third vaccine dose_Previously infected" = "Third dose after 3 previous antigen exposures",#\n (2 vaccine doses and 1 infection)",
+     "Post BA1 infection_Infection naive" = "BA1 infection after 3 previous antigen exposures",#\n (3 vaccines doses)",
+     "Post BA1 infection_Previously infected" = "BA1 infection after 4 previous antigen exposures",#\n (3 vaccine doses and 1 infection)",
+     "Post BA2 infection_Infection naive" = "BA2 infection after 3 previous antigen exposures",#\n (3 vaccines doses)",
+     "Post BA2 infection_Previously infected" = "BA2 infection after 4 previous antigen exposures"#\n (3 vaccine doses and 1 infection)"
+     )
+
+pred_post_plot <- pred_post_plot %>% 
+    mutate(new_col = recode(new_col, !!!relabel_type_new_cl)) 
+
+pred_post_plot <- pred_post_plot %>% separate(new_col, c("Exposure", "Infection history"), " after ", remove = FALSE)
+
 
 labs_plot_y <- c("\u2264 40", "80", "160", "320", "640", "1280", "\u2265 2560")
 
 pred_post_plot %>% filter(t < 150) %>%
     ggplot() +
         geom_hline(yintercept = 5 * 2^7, linetype = "dashed", color = "gray30") + 
-        geom_line(aes(x = t, y = 5 * 2^fitted_val, color = type, linetype = hist), size = 1, alpha = 0.8) + 
-        facet_grid(cols = vars(info2)) + 
-        scale_linetype_manual(values = c("longdash", "solid")) +
-        scale_y_continuous(trans = "log2", breaks = 2 ^ (1:7) * 5, labels = labs_plot_y) + 
+        geom_hline(yintercept = 5 * 2^1, linetype = "dashed", color = "gray30") + 
+        geom_line(aes(x = t, y = 5 * 2^fitted_val, color = Exposure), size = 1.5, alpha = 0.8) + 
+        facet_grid(cols = vars(info2), rows = vars(`Infection history`)) + 
+      #  scale_color_manual(values = c("red", "darkred", "blue", "darkblue", "lightgreen", "green")) +
+        scale_linetype_manual(values = c("dotted", "dashed", "solid")) +
+        scale_y_continuous(trans = "log2", breaks = 2 ^ (1:7) * 5, labels = labs_plot_y, limits = c(10, 2000)) + 
         theme_bw() +
-        labs(x = "Time post exposure (days)", y = "Titre value", color = "Exposure type", linetype = "Infection history")
+        labs(x = "Time post exposure (days)", y = "Titre value", color = "Recent exposure", linetype = "Infection history")
 
+
+data.frame(
+    x = c(1, 20, 120),
+    y = c(4, 7, 6)
+) %>% 
+    ggplot() + 
+        geom_hline(yintercept = 5 * 2^7, linetype = "dashed", color = "gray30") + 
+        geom_hline(yintercept = 5 * 2^1, linetype = "dashed", color = "gray30") + 
+        geom_line(aes(x, 5 * 2^y), size = 2) + 
+        scale_y_continuous(trans = "log2",  breaks = 2 ^ (1:7) * 5, labels = labs_plot_y, limits = c(10, 1200)) + 
+        theme_minimal() + 
+        geom_segment(aes(x = 15, y = 10, xend = 15, yend = 5 * 2^7),
+                  arrow = arrow(length = unit(0.5, "cm"))) +
+       geom_segment(aes(x = 35, y = 5 * 2^4, xend = 35, yend = 5 * 2^7),
+                  arrow = arrow(length = unit(0.5, "cm"))) +
+
+        labs(x = "Days post infection", y = "Titre value")
+
+
+
+ggsave(here::here("outputs", "figs", "final_figs", "fig1.pdf"))
 
