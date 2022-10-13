@@ -61,6 +61,9 @@ reg_data_Delta <- get_reg_data_BAX("Delta", "ic50_Delta")
 reg_data_BA1 <- get_reg_data_BAX("Omicron-BA.1", "ic50_Omicron_BA1")
 reg_data_BA2 <- get_reg_data_BAX("Omicron-BA.2", "ic50_Omicron_BA2")
 
+# Get info on vaccine dose timiings
+
+
 plt_schematics <- function(reg_data, variant_string, title_string){
     labs_plot_y <- c("\u2264 40", "80", "160", "320", "640", "1280", "\u2265 2560")
 
@@ -145,3 +148,27 @@ main_plot <- function(reg_data, posterior_values, variant_string) {
 main_plot(reg_data_D_meta, posterior_values_D, "Delta")
 main_plot(reg_data_BA1_meta, posterior_values_BA1, "BA1")
 main_plot(reg_data_BA2_meta, posterior_values_BA2, "BA2")
+
+
+
+require(brms)
+reg_data_BA1_vac <- reg_data_BA1 %>% left_join(filter(dose3_vac, info1 == 3) %>% select(elig_study_id, dose3_date = calendar_date)) %>% 
+    mutate(days_until_inf_dose3 = as.numeric(calendar_date - dose3_date ))
+reg_data_BA1_vac_meta <- reg_data_BA1_vac %>% left_join(meta_data) %>% select(!inf_date) %>% drop_na %>% 
+    mutate(centre = as.character(centre)) %>% filter(centre != "ealingnwp") %>% filter(days_until_inf_dose3 > 0)
+
+reg_data_BA1_vac_meta %>% as.data.frame
+
+reg_data_BA1_vac_meta %>% 
+        ggplot() +
+            geom_count(aes(x = calendar_date, y = 5 * 2^info3, color = as.logical(infection)), 
+                alpha = 0.7) + 
+            scale_color_manual(values = c("gray", "red")) +
+            scale_y_continuous(trans = "log2", breaks = 2 ^ (1:7) * 5, labels = labs_plot_y) + 
+            guides(size = "none") + labs(x = "Calendar date", y = "Titre value",  color = "Becomes infected?") + 
+            theme_bw()
+
+fit_BA1_vac <- brm(infection ~ days_until_inf_dose3 + sex + centre + gp(info3), family = bernoulli("logit"), data = reg_data_BA1_vac_meta, cores = 4)
+
+
+rexp(1000, 1/150)

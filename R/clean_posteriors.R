@@ -13,12 +13,13 @@ info3_levels <- c("Vac3", "BA1", "BA2", "BA5")
 file_name_type <- c("vac3", "ba1", "ba2", "ba5")
 
 titre_boost_wane <- function(posterior, t_vec) {
-    boost_i <- posterior[1]
-    boost_s <- posterior[2]
-    wane_s <- posterior[3]
-    t_p <- posterior[4]
 
-    mu <- rep(0, length(t))
+    boost_i <- posterior[[1]]
+    boost_s <- posterior[[2]]
+    wane_s <- posterior[[3]]
+    t_p <- posterior[[4]]
+
+    mu <- rep(0, length(t_vec))
     i <- 1
     for (t in t_vec) {
         if (t < t_p) { 
@@ -31,6 +32,57 @@ titre_boost_wane <- function(posterior, t_vec) {
     }
     return(mu);
 } 
+
+
+get_fitted_lines_uncert <- function(exposure) {
+    post_pred_fitted_list <- list(); k <- 1
+    for (i in 1:4) {
+        for (j in 1:4) {
+            
+                info3_levels_str <- paste0(info3_levels[j], " ", exposure)
+                file_name_type_2 <- paste0(file_name_type[j], "_", exposure)
+
+                if (exposure == "naive") {
+                    titre_all_trim <- titre_all_naive %>% filter(info2 == info2_levels[i], type == info3_levels_str) %>% filter(!is.na(info3))
+                } else {
+                    titre_all_trim <- titre_all_exposed %>% filter(info2 == info2_levels[i], type == info3_levels_str) %>% filter(!is.na(info3))
+                }
+                temp_stanfit <- readRDS(here::here("outputs", "stanfits", paste0("fit_", file_name_var[i], "_", file_name_type_2, ".Rdata")))
+                post_fixed_eff <- temp_stanfit %>% as_draws(variables = c("boost_i", "boost_s", "wane_s", "t_p")) %>% as_draws_df
+                sample_vals <- post_fixed_eff %>% .[1:1000, ]
+
+                for (a in 1:nrow(sample_vals)) {
+                    if (length(titre_all_trim$time_until_bleed) > 0) {
+                        fitted_val_temp <- titre_boost_wane(sample_vals[a, ], 0:max(titre_all_trim$time_until_bleed))
+                        post_pred_fitted_list[[k]] <- data.frame(
+                            sample_no = a,
+                            info2 = info2_levels[i],
+                            type = info3_levels[j],
+                            t = 0:max(titre_all_trim$time_until_bleed),
+                            fitted_val = fitted_val_temp
+                        )
+                    } else {
+                        post_pred_fitted_list[[k]] <- data.frame(
+                            sample_no = a,
+                            info2 = info2_levels[i],
+                            type = info3_levels[j],
+                            t = 0,
+                            fitted_val = NA
+                        )
+                    }
+                    k <- k + 1
+                }
+        }
+    }
+    post_pred_fitted_list %>% bind_rows %>% bind_rows %>% mutate(info2 = factor(info2, levels = info2_levels), type = factor(type, levels = info3_levels))
+}
+
+post_pred_fitted_naive_uncert <- get_fitted_lines_uncert("naive")
+post_pred_fitted_exposed_uncert <- get_fitted_lines_uncert("exposed")
+save(post_pred_fitted_naive_uncert, file = here::here("data", "df", "fitted_lines_naive_uncert.RData"))
+save(post_pred_fitted_exposed_uncert, file = here::here("data", "df", "fitted_lines_exposed_uncert.RData"))
+
+
 
 get_fitted_lines <- function(exposure) {
     post_pred_fitted_list <- list(); k <- 1
