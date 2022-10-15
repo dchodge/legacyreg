@@ -6,11 +6,11 @@ load(file = here::here("data", "df", "titre_all_exposed.RData")) # titre_all_exp
 
 info2_levels <- c("Wild type", "Omicron BA1", "Omicron BA2", "Omicron BA5")
 file_name_var <- c("wt", "ba1", "ba2", "ba5")
-info3_levels <- c("Vac3", "BA1", "BA2", "BA5")
-file_name_type <- c("vac3", "ba1", "ba2", "ba5")
+info3_levels <- c("Vac3", "BA1", "BA2")
+file_name_type <- c("vac3", "ba1", "ba2")
 
 for (i in 1:4) { # The strains 
-    for (j in 1:4) { # The types   
+    for (j in 1:3) { # The types   
         for (exposure in c("naive", "exposed")) {
    
             info3_levels_str <- paste0(info3_levels[j], " ", exposure)
@@ -51,5 +51,3 @@ for (i in 1:4) { # The strains
         }
     }
 }
-
-

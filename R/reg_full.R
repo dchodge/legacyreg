@@ -40,12 +40,12 @@ get_reg_data_BAX <- function(inf_variant_str, ic50_variant_str) {
     bleed_info_BAX_inf <- dose3_bleed %>% filter(elig_study_id %in% dose3_inf_BAX_ids) %>% 
         filter(info2 == ic50_variant_str) %>% left_join(select(dose3_inf_BAX, elig_study_id, inf_date = calendar_date)) %>%
         filter(calendar_date < inf_date) %>% group_by(elig_study_id) %>% filter(info1 == max(info1)) %>% drop_na %>% 
-        filter((calendar_date > (start_BAX_date - days(50))) & (calendar_date < end_BAX_date)) %>%
+        filter((calendar_date > (start_BAX_date + days(0))) & (calendar_date < end_BAX_date)) %>%
         mutate(infection = 1)
 
     dose3_inf_not_BAX_ids <- setdiff(dose3_bleed %>% pull(elig_study_id), dose3_inf_BAX_ids)
     bleed_info_no_BAX_inf <- dose3_bleed %>% filter(elig_study_id %in% dose3_inf_not_BAX_ids) %>% 
-        filter((calendar_date > (start_BAX_date - days(50)))) %>%
+        filter((calendar_date > (start_BAX_date + days(0)))) %>%
         filter(calendar_date < end_BAX_date) %>%
         filter(info2 == ic50_variant_str) %>% 
         group_by(elig_study_id) %>% filter(info1 == min(info1)) %>% 
@@ -53,7 +53,6 @@ get_reg_data_BAX <- function(inf_variant_str, ic50_variant_str) {
         mutate(infection = 0)
 
     reg_data_BAX <- bind_rows(bleed_info_BAX_inf, bleed_info_no_BAX_inf)
-    reg_data_BAX <- reg_data_BAX %>% mutate(info3 = round(info3, 0))
     reg_data_BAX
 }
 
@@ -93,9 +92,9 @@ reg_data_BA2_meta <- reg_data_BA2 %>% left_join(meta_data) %>% select(!inf_date)
 
 library(brms)
 
-fit_D <- brm(infection ~ sex + centre + gp(info3), family = bernoulli("logit"), data = reg_data_D_meta, cores = 4)
-fit_BA1 <- brm(infection ~ sex + centre + gp(info3), family = bernoulli("logit"), data = reg_data_BA1_meta, cores = 4)
-fit_BA2 <- brm(infection ~ sex + centre + gp(info3), family = bernoulli("logit"), data = reg_data_BA2_meta, cores = 4)
+fit_D <- brm(infection ~ age + sex + centre + gp(info3), family = bernoulli("logit"), data = reg_data_D_meta, cores = 4)
+fit_BA1 <- brm(infection ~ age + sex + centre + gp(info3), family = bernoulli("logit"), data = reg_data_BA1_meta, cores = 4)
+fit_BA2 <- brm(infection ~ age + sex + centre + gp(info3), family = bernoulli("logit"), data = reg_data_BA2_meta, cores = 4)
 
 require(posterior); require(tidybayes); require(modelr)
 posterior_values_D <- reg_data_D_meta %>% add_epred_draws(fit_D)
@@ -152,12 +151,19 @@ main_plot(reg_data_BA2_meta, posterior_values_BA2, "BA2")
 
 
 require(brms)
-reg_data_BA1_vac <- reg_data_BA1 %>% left_join(filter(dose3_vac, info1 == 3) %>% select(elig_study_id, dose3_date = calendar_date)) %>% 
-    mutate(days_until_inf_dose3 = as.numeric(calendar_date - dose3_date ))
-reg_data_BA1_vac_meta <- reg_data_BA1_vac %>% left_join(meta_data) %>% select(!inf_date) %>% drop_na %>% 
-    mutate(centre = as.character(centre)) %>% filter(centre != "ealingnwp") %>% filter(days_until_inf_dose3 > 0)
+reg_data_BA1_vac <- reg_data_BA1 %>% left_join(filter(dose3_vac, info1 == 3) %>% 
+    select(elig_study_id, dose3_date = calendar_date)) %>% 
+    mutate(days_dose3_2_bleed = as.numeric(calendar_date - dose3_date )) %>%
+    mutate(days_bleed_2_inf = as.numeric(inf_date - calendar_date ))
+
+reg_data_BA1_vac_meta <- reg_data_BA1_vac %>% left_join(meta_data) %>% select(!inf_date)  %>% 
+    mutate(centre = as.character(centre)) %>% filter(centre != "ealingnwp") %>%
+    filter(days_dose3_2_bleed > 0, (days_bleed_2_inf > 0 | is.na(days_bleed_2_inf))) %>% 
+    mutate(days_bleed_2_inf = replace_na(days_bleed_2_inf, 0)) %>% 
+    mutate(dose_3_until_titre_rel = days_dose3_2_bleed + days_bleed_2_inf)
 
 reg_data_BA1_vac_meta %>% as.data.frame
+labs_plot_y <- c("\u2264 40", "80", "160", "320", "640", "1280", "\u2265 2560")
 
 reg_data_BA1_vac_meta %>% 
         ggplot() +
@@ -168,7 +174,111 @@ reg_data_BA1_vac_meta %>%
             guides(size = "none") + labs(x = "Calendar date", y = "Titre value",  color = "Becomes infected?") + 
             theme_bw()
 
-fit_BA1_vac <- brm(infection ~ days_until_inf_dose3 + sex + centre + gp(info3), family = bernoulli("logit"), data = reg_data_BA1_vac_meta, cores = 4)
 
 
-rexp(1000, 1/150)
+posterior_values_BA1 <- reg_data_BA1_vac_meta %>% add_epred_draws(fit_BA1_vac)
+e_titre40_BA1 <- posterior_values_BA1 %>% filter(info3 == 1) %>% pull(.epred) %>% mean
+posterior_values_BA1 <- posterior_values_BA1 %>% mutate(.eprd_rel = .epred / e_titre40_BA1)
+
+
+main_plot_alt <- function(reg_data, posterior_values, variant_string) { 
+    reg_data <- reg_data_BA1_vac_meta
+    posterior_values <- posterior_values_BA1
+    require(ggdist)
+    labs_plot_y <- c("\u2264 40", "80", "160", "320", "640", "1280", "\u2265 2560")
+    p1 <- posterior_values %>%
+        ggplot() + 
+          #  stat_summary(data = reg_data, aes(2 ^ info3 * 5, infection), shape = 3, size = 2, fun = "mean", geom = "point") + 
+            stat_lineribbon(aes(2 ^ estimated_wane_titre_gp * 5, .eprd_rel), .width = .95, fill = "red", alpha = 0.5, 
+                point_interval = "mean_qi") + theme_bw() + 
+            scale_x_continuous(trans = "log2", breaks = 2 ^ (1:7) * 5, labels = labs_plot_y) + 
+            labs(x = "Titre value before infection",
+                y = paste0("Proportion of population infected relative to those with titre \u2264 40"))
+
+
+    p2 <- posterior_values %>% 
+        ggplot() + 
+         #   stat_summary(data = reg_data, aes(centre, infection), shape = 3, size = 2, fun = "mean", geom = "point") + 
+            stat_pointinterval(aes(centre, .eprd_rel), .width = .95, fill = "red", alpha = 0.5, 
+                point_interval = "mean_qi") + theme_bw() + 
+            labs(x = "Center", 
+                y = paste0("Proportion of population infected \nrelative to those with titre \u2264 40"))
+    p3 <- posterior_values %>% 
+        ggplot() + 
+           # stat_summary(data = reg_data, aes(sex, infection), shape = 3, size = 2, fun = "mean", geom = "point") + 
+            stat_pointinterval(aes(sex, .eprd_rel), .width = .95, fill = "red", alpha = 0.5, 
+                point_interval = "mean_qi") + theme_bw() + 
+            labs(x = "Gender",
+                y = paste0("Proportion of population infected \nrelative to those with titre \u2264 40"))
+                
+    p4 <- posterior_values %>% 
+        ggplot() + 
+         #   stat_summary(data = reg_data, aes(centre, infection), shape = 3, size = 2, fun = "mean", geom = "point") + 
+            stat_lineribbon(aes(age, .eprd_rel), .width = .95, fill = "red", alpha = 0.5, 
+                point_interval = "mean_qi") + theme_bw() + 
+            labs(x = "Age (years)", 
+                y = paste0("Proportion of population infected \nrelative to those with titre \u2264 40"))
+    p5 <- posterior_values %>% 
+        ggplot() + 
+           # stat_summary(data = reg_data, aes(sex, infection), shape = 3, size = 2, fun = "mean", geom = "point") + 
+            stat_lineribbon(aes(dose_3_until_titre_rel, .eprd_rel), .width = .95, fill = "red", alpha = 0.5, 
+                point_interval = "mean_qi") + theme_bw() + 
+            labs(x = "Days after 3rd dose",
+                y = paste0("Proportion of population infected \nrelative to those with titre \u2264 40"))
+    require(patchwork)
+    p1 / (p2 + p3) / (p4 + p5) + plot_annotation(title = paste0(variant_string , " infections"),
+        subtitle = "Posterior predictive plots on y ~ gender + center + gp(preinf_titre)", tag_levels = "A")
+    ggsave(here::here("outputs", "figs", "reg_titre", paste0(variant_string, ".png")), width = 10, height = 15)
+}   
+
+
+reg_data_BA1_vac_meta <- reg_data_BA1_vac_meta %>% mutate(estimated_wane_titre = info3 * (1 - days_bleed_2_inf * 0.003))
+
+reg_data_BA1_vac_meta %>% 
+    ggplot() + 
+        geom_count(aes(dose_3_until_titre_rel, estimated_wane_titre, color = as.character(infection)), alpha = 0.7) + 
+                    scale_color_manual(values = c("gray", "red")) 
+
+
+reg_data_BA1_vac_meta %>% 
+    ggplot() + 
+        geom_segment(aes(x = days_dose3_2_bleed, xend = dose_3_until_titre_rel, y = info3, yend = estimated_wane_titre, group = elig_study_id), alpha = 0.7, 
+            position = position_dodge(0.5)) 
+
+reg_data_BA1_vac_meta <- reg_data_BA1_vac_meta %>% mutate(estimated_wane_titre_gp = round(estimated_wane_titre, 0))
+fit_BA1_vac <- brm(infection ~ dose_3_until_titre_rel + age + sex + centre + gp(estimated_wane_titre_gp), family = bernoulli("logit"), data = reg_data_BA1_vac_meta, cores = 4)
+
+
+require(modelr)
+posterior_values_BA1 <- reg_data_BA1_vac_meta %>% 
+    group_by(centre, sex, infection) %>% 
+    modelr::data_grid(age = seq(20, 70, 5), 
+        estimated_wane_titre_gp = c(1:7), 
+        dose_3_until_titre_rel =  seq(1, 150, 5)) %>%
+    add_epred_draws(fit_BA1_vac, ndraws = 100)
+e_titre40_BA1 <- posterior_values_BA1 %>% filter(estimated_wane_titre_gp == 1) %>% pull(.epred) %>% mean
+posterior_values_BA1 <- posterior_values_BA1 %>% mutate(.eprd_rel = .epred )
+
+main_plot_alt(reg_data_BA1_vac_meta, posterior_values_BA1, "BA1_alt")
+
+library(scales)
+logit_alt <- trans_new("logit perc",
+    transform = function(x) exp(x) / (1 + exp(x)),
+    inverse = function(x) log(x / (1 - x))
+)
+
+
+fit_BA1_vac_df <- fit_BA1_vac %>% as_draws_df
+i_age_vec <- fit_BA1_vac_df$b_Intercept
+s_age_vec <- fit_BA1_vac_df$b_age
+s_vac3_vec <- fit_BA1_vac_df$b_dose_3_until_titre_rel
+s_titre_vec <- fit_BA1_vac_df$b_estimated_wane_titre
+
+logit_alt <- function(x, i, s) exp(x * s + i) / (1 + exp(x * s + i))
+
+ggplot() + 
+    xlim(1, 7) + ylim(0, 1) +
+    lapply(1:500,
+        function(x)
+            geom_function(fun = logit_alt, args = list(i = i_age_vec[x], s = s_titre_vec[x]), alpha = 0.5, size = 0.5 ) 
+    )

@@ -2,38 +2,64 @@ library(tidyverse)
 library(here)
 library(lubridate)
 
+#########################################
+# Find symptom-only infections #
+########################################
+add_symptoms_only <- function(raw_legacy_full) {
+    symptoms.only <- raw_legacy_full %>% 
+        filter(!is.na(episode_number)) %>%
+        group_by(elig_study_id, episode_number) %>%
+        fill(REDCAP_PCR_test_site, .direction = "updown") %>%
+        fill(Sx_severity, .direction = "updown") %>%
+        slice_head() %>%
+        ungroup() %>%
+        filter(str_detect(Sx_severity, "mild") |
+                str_detect(Sx_severity, "moderate") |
+                str_detect(Sx_severity, "severe")) %>%
+        filter(is.na(REDCAP_PCR_test_site))
+    
+    symptoms.only <- symptoms.only %>%
+    mutate(episode_symptoms_only = "symptoms_only")
+    
+    symptoms.only <- symptoms.only %>%
+    select(elig_study_id, episode_number, episode_symptoms_only)
+    
+    raw_legacy_full <- raw_legacy_full %>%
+    left_join(symptoms.only)
+  raw_legacy_full
+}
+
 ############################################################
 ############### Get times of everything into one dataframe
 ############################################################
 
 get_df_legacy_raw_annot <- load(here::here("data", "Legacy_DataAnnotatedDateSeries_2022-09-09.RData"))
-raw_legacy_full <- chrono.df
+raw_legacy_full_0909 <- chrono.df
+
+get_df_legacy_raw_annot <- load(here::here("data", "Legacy_DataAnnotatedDateSeries_2022-10-14.RData"))
+raw_legacy_full_1014 <- chrono.df
+
+raw_legacy_full_0909 <- raw_legacy_full_0909 %>% add_symptoms_only
+raw_legacy_full_1014 <- raw_legacy_full_1014 %>% add_symptoms_only
+
+raw_legacy_full_0909 %>% select(elig_study_id, episode_variant_summarised) %>% unique %>%
+    pull(episode_variant_summarised) %>% table
+raw_legacy_full_1014 %>% select(elig_study_id, episode_variant_summarised) %>% unique %>%
+    pull(episode_variant_summarised) %>% table
+
+raw_legacy_full_0909 %>% filter(episode_variant_summarised == "Omicron-BA.5") %>% 
+    pull(ic50_Omicron_BA5) %>% `>`(0) %>% sum(na.rm = TRUE)
+raw_legacy_full_1014 %>% filter(episode_variant_summarised == "Omicron-BA.5") %>%
+    pull(ic50_Omicron_BA5) %>% `>`(0) %>% sum(na.rm = TRUE)
+
+raw_legacy_full_0909 %>% pull(ic50_Omicron_BA5) %>% `>`(0) %>% sum(na.rm = TRUE)
+raw_legacy_full_1014 %>% pull(ic50_Omicron_BA5) %>% `>`(0) %>% sum(na.rm = TRUE)
+
+raw_legacy_full <- raw_legacy_full_1014
+
 legacy_ids_all <- raw_legacy_full %>% pull(elig_study_id) %>% unique
 
 
-#########################################
-# Find symptom-only infections #
-########################################
-symptoms.only <- raw_legacy_full %>% 
-    filter(!is.na(episode_number)) %>%
-    group_by(elig_study_id, episode_number) %>%
-    fill(REDCAP_PCR_test_site, .direction = "updown") %>%
-    fill(Sx_severity, .direction = "updown") %>%
-    slice_head() %>%
-    ungroup() %>%
-    filter(str_detect(Sx_severity, "mild") |
-            str_detect(Sx_severity, "moderate") |
-            str_detect(Sx_severity, "severe")) %>%
-    filter(is.na(REDCAP_PCR_test_site))
- 
-symptoms.only <- symptoms.only %>%
-  mutate(episode_symptoms_only = "symptoms_only")
- 
-symptoms.only <- symptoms.only %>%
-  select(elig_study_id, episode_number, episode_symptoms_only)
- 
-raw_legacy_full <- raw_legacy_full %>%
-  left_join(symptoms.only)
   
 #####################
 # Get bleed times #

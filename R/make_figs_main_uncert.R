@@ -13,7 +13,6 @@ load(file = here::here("data", "df", "fitted_lines_naive_uncert.RData"))
 load(file = here::here("data", "df", "fitted_lines_exposed_uncert.RData"))
 
 
-
 relabel_type_new_cl <- 
     c("Third vaccine dose_Infection naive" = "2 previous \nantigen exposures", #\n (All vaccines)", 
      "Third vaccine dose_Previously infected" = "3 previous \nantigen exposures",#\n (2 vaccine doses and 1 infection)",
@@ -23,17 +22,16 @@ relabel_type_new_cl <-
      "BA2 infection_Previously infected" = "4 previous \nantigen exposures"#\n (3 vaccine doses and 1 infection)"
      )
 
-
 ## ## ## ## ## ## ## ## ## ## ## ## ## 
 # Get summary points data frame
 ## ## ## ## ## ## ## ## ## ## ## ## ## 
 info2_levels <- c("Ancestral", "Omicron BA1", "Omicron BA2", "Omicron BA5")
-file_name_var <- c("wt", "ba1", "ba2")
-info3_levels <- c("Vac 3", "BA 1", "BA 2", "BA 5")
-file_name_type <- c("vac3", "ba1", "ba2", "ba3")
+file_name_var <- c("wt", "ba1", "ba2", "ba5")
+info3_levels <- c("Vac 3", "BA 1", "BA 2")
+file_name_type <- c("vac3", "ba1", "ba2")
 
 post_fitted_list <- list(); k <- 1
-for (i in 1:3) {
+for (i in 1:4) {
     for (j in 1:3) {
         for (exposure in c("naive", "exposed")) {
             info3_levels_str <- paste0(info3_levels[j])
@@ -66,9 +64,9 @@ post_fitted_recode <- post_fitted %>% mutate(type = recode(type, !!!relabel_type
 # Get post pred lines data frame
 ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-naive_pred_post_plot <- post_pred_fitted_naive_uncert %>% filter(type != "BA5", info2 != "Omicron BA5") %>%
+naive_pred_post_plot <- post_pred_fitted_naive_uncert %>%
     mutate(infection_history = "Infection naive")
-exposed_pred_post_plot <- post_pred_fitted_exposed_uncert %>% filter(type != "BA5",info2 != "Omicron BA5") %>%
+exposed_pred_post_plot <- post_pred_fitted_exposed_uncert %>%
     mutate(infection_history = "Previously infected")
 
 pred_post_plot <- bind_rows(naive_pred_post_plot, exposed_pred_post_plot) %>%
@@ -138,13 +136,14 @@ p1 <- data.frame(
         ggtext::geom_richtext(aes(x = 115, y = 5 * 2^5, label = "Titre wane"), size = label_text_size, angle = 90) +
         labs(x = "Days post infection", y = "Titre value") + 
         theme(text = element_text(size = 15))
-require(ggdist)
+
+library(ggdist)
 p2 <- pred_post_plot_clean %>% filter(t < 150) %>%
     ggplot() +
         geom_hline(yintercept = 7, linetype = "dashed", color = "gray30") + 
         geom_hline(yintercept = 1, linetype = "dashed", color = "gray30") + # , linetype = infection_history
        # geom_line(aes(x = t, y = 5 * 2^fitted_val, color = recent_exposure, group = paste0(sample_no, infection_history, recent_exposure)), size = 0.2, alpha = 0.2) + 
-        stat_ribbon(aes(x = t, y = fitted_val, fill = recent_exposure), point_interval = "mean_qi", .width = 0.95, alpha = 0.6) +
+        stat_lineribbon(aes(x = t, y = fitted_val, fill = recent_exposure, colour = stat(I(NA))), point_interval = "mean_qi", .width = 0.95, alpha = 0.6) +
         stat_summary(aes(x = t, y = fitted_val, group = recent_exposure), color = "white", fun = "mean", geom = "line", size = 1, alpha = 1) + 
         stat_summary(aes(x = t, y = fitted_val, color = recent_exposure, linetype = infection_history), fun = "mean", geom = "line", size = 0.5, alpha = 1) + 
         facet_grid(cols = vars(measured_variant), rows = vars(number_ag_exposure)) + 
@@ -232,7 +231,7 @@ p2 <- pred_post_plot_clean %>% group_by(sample_no, measured_variant, recent_expo
     mutate(fitted_val_boost = fitted_val - min(fitted_val)) %>% filter(t < 150) %>%
     ggplot() +
        # geom_line(aes(x = t, y = 5 * 2^fitted_val, color = recent_exposure, group = paste0(sample_no, infection_history, recent_exposure)), size = 0.2, alpha = 0.2) + 
-        stat_ribbon(aes(x = t, y = fitted_val_boost, fill = recent_exposure), point_interval = "mean_qi", .width = 0.95, alpha = 0.6) +
+        stat_lineribbon(aes(x = t, y = fitted_val_boost, fill = recent_exposure, colour = stat(I(NA))), point_interval = "mean_qi", .width = 0.95, alpha = 0.6) +
         stat_summary(aes(x = t, y = fitted_val_boost, group = recent_exposure), color = "white", fun = "mean", geom = "line", size = 1, alpha = 1) + 
         stat_summary(aes(x = t, y = fitted_val_boost, color = recent_exposure, linetype = infection_history), fun = "mean", geom = "line", size = 0.5, alpha = 1) + 
         facet_grid(cols = vars(measured_variant), rows = vars(number_ag_exposure)) + 

@@ -12,8 +12,8 @@ plot_model_data <- function(titre_all_naive, titre_all_exposed, type_str, title_
     type_str_fil_naive <- paste0(type_str, " naive")
     type_str_fil_exposed <- paste0(type_str, " exposed")
 
-    titre_all_naive_dose3 <- titre_all_naive %>% filter(type == !!type_str_fil_naive) %>% filter(info2 != "Omicron BA5")
-    titre_all_exposed_dose3 <- titre_all_exposed %>% filter(type == !!type_str_fil_exposed) %>% filter(info2 != "Omicron BA5")
+    titre_all_naive_dose3 <- titre_all_naive %>% filter(type == !!type_str_fil_naive) # %>% filter(info2 != "Omicron BA5")
+    titre_all_exposed_dose3 <- titre_all_exposed %>% filter(type == !!type_str_fil_exposed) #%>% filter(info2 != "Omicron BA5")
 
     labs_plot_y <- c("\u2264 40", "80", "160", "320", "640", "1280", "\u2265 2560")
 
@@ -51,14 +51,14 @@ plot_model_data_fitted <- function(titre_all_naive, titre_all_exposed, fitted_na
 
     relabel_info2 <- c("Wild type" = "Ancestral")
 
-    titre_all_naive_dose3 <- titre_all_naive %>% filter(type == !!type_str_fil_naive) %>% filter(info2 != "Omicron BA5") %>%
+    titre_all_naive_dose3 <- titre_all_naive %>% filter(type == !!type_str_fil_naive) %>% 
         mutate(info2 = recode(info2, !!!relabel_info2)) 
-    titre_all_exposed_dose3 <- titre_all_exposed %>% filter(type == !!type_str_fil_exposed) %>% filter(info2 != "Omicron BA5") %>%
+    titre_all_exposed_dose3 <- titre_all_exposed %>% filter(type == !!type_str_fil_exposed) %>% 
         mutate(info2 = recode(info2, !!!relabel_info2)) 
 
-    fitted_naive_type  <- fitted_naive %>% filter(type == !!type_str) %>% filter(info2 != "Omicron BA5") %>%
+    fitted_naive_type  <- fitted_naive %>% filter(type == !!type_str) %>%
         mutate(info2 = recode(info2, !!!relabel_info2)) 
-    fitted_exposed_type <- fitted_exposed %>% filter(type == !!type_str) %>% filter(info2 != "Omicron BA5") %>%
+    fitted_exposed_type <- fitted_exposed %>% filter(type == !!type_str) %>%
         mutate(info2 = recode(info2, !!!relabel_info2)) 
 
     lower <- 10;
@@ -105,11 +105,9 @@ load(file = here::here("data", "df", "titre_all_exposed.RData")) # titre_all_exp
 load(file = here::here("data", "df", "fitted_lines_naive.RData")) # post_pred_fitted_naive
 load(file = here::here("data", "df", "fitted_lines_exposed.RData")) # post_pred_fitted_exposed
 
-
 plot_model_data(titre_all_naive, titre_all_exposed, "Vac3", "Third vaccine dose")
 plot_model_data(titre_all_naive, titre_all_exposed, "BA1", "Omicron BA1 infection")
 plot_model_data(titre_all_naive, titre_all_exposed, "BA2", "Omicron BA2 infection")
-plot_model_data(titre_all_naive, titre_all_exposed, "BA5", "Omicron BA5 infection")
 
 p1 <- plot_model_data_fitted(titre_all_naive, titre_all_exposed, post_pred_fitted_naive, post_pred_fitted_exposed, "Vac3", "Third vaccine dose", "#AA4A44",
     subtitle1 = "Third antigenic exposure\nExposure history: two vaccine doses",

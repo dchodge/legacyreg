@@ -26,12 +26,12 @@ relabel_type_new_cl <-
 # Get summary points data frame
 ## ## ## ## ## ## ## ## ## ## ## ## ## 
 info2_levels <- c("Ancestral", "Omicron BA1", "Omicron BA2", "Omicron BA5")
-file_name_var <- c("wt", "ba1", "ba2")
-info3_levels <- c("Vac 3", "BA 1", "BA 2", "BA 5")
-file_name_type <- c("vac3", "ba1", "ba2", "ba3")
+file_name_var <- c("wt", "ba1", "ba2", "ba5")
+info3_levels <- c("Vac 3", "BA 1", "BA 2")
+file_name_type <- c("vac3", "ba1", "ba2")
 
 post_fitted_list <- list(); k <- 1
-for (i in 1:3) {
+for (i in 1:4) {
     for (j in 1:3) {
         for (exposure in c("naive", "exposed")) {
             info3_levels_str <- paste0(info3_levels[j])
@@ -64,9 +64,9 @@ post_fitted_recode <- post_fitted %>% mutate(type = recode(type, !!!relabel_type
 # Get post pred lines data frame
 ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-naive_pred_post_plot <- post_pred_fitted_naive %>% filter(type != "BA5", info2 != "Omicron BA5") %>%
+naive_pred_post_plot <- post_pred_fitted_naive %>%
     mutate(infection_history = "Infection naive")
-exposed_pred_post_plot <- post_pred_fitted_exposed %>% filter(type != "BA5",info2 != "Omicron BA5") %>%
+exposed_pred_post_plot <- post_pred_fitted_exposed  %>%
     mutate(infection_history = "Previously infected")
 
 pred_post_plot <- bind_rows(naive_pred_post_plot, exposed_pred_post_plot) %>%

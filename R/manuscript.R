@@ -13,4 +13,11 @@ df_summary <- bind_rows(
 ) %>% left_join(df_age) %>% filter(!type %in% c("BA5 naive", "BA5 exposed"))
 
 
-df_summary %>% select(elig_study_id, type) %>% unique %>% group_by(type) %>% summarise(n = n()),
+df_summary %>% select(elig_study_id, type) %>% unique %>% group_by(type) %>% summarise(n = n())
+
+df_summary %>% select(elig_study_id, type, age) %>% unique %>% 
+    ggplot() + 
+        geom_histogram(aes(age)) + 
+        facet_grid(vars(type)) + 
+        theme_bw() + 
+        labs(x = "Age", y = "Count")

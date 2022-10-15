@@ -9,8 +9,8 @@ load(file = here::here("data", "df", "titre_all_exposed.RData")) # titre_all_exp
 
 info2_levels <- c("Wild type", "Omicron BA1", "Omicron BA2", "Omicron BA5")
 file_name_var <- c("wt", "ba1", "ba2", "ba5")
-info3_levels <- c("Vac3", "BA1", "BA2", "BA5")
-file_name_type <- c("vac3", "ba1", "ba2", "ba5")
+info3_levels <- c("Vac3", "BA1", "BA2")
+file_name_type <- c("vac3", "ba1", "ba2")
 
 titre_boost_wane <- function(posterior, t_vec) {
 
@@ -37,7 +37,7 @@ titre_boost_wane <- function(posterior, t_vec) {
 get_fitted_lines_uncert <- function(exposure) {
     post_pred_fitted_list <- list(); k <- 1
     for (i in 1:4) {
-        for (j in 1:4) {
+        for (j in 1:3) {
             
                 info3_levels_str <- paste0(info3_levels[j], " ", exposure)
                 file_name_type_2 <- paste0(file_name_type[j], "_", exposure)
@@ -49,7 +49,7 @@ get_fitted_lines_uncert <- function(exposure) {
                 }
                 temp_stanfit <- readRDS(here::here("outputs", "stanfits", paste0("fit_", file_name_var[i], "_", file_name_type_2, ".Rdata")))
                 post_fixed_eff <- temp_stanfit %>% as_draws(variables = c("boost_i", "boost_s", "wane_s", "t_p")) %>% as_draws_df
-                sample_vals <- post_fixed_eff %>% .[1:1000, ]
+                sample_vals <- post_fixed_eff %>% .[1:100, ]
 
                 for (a in 1:nrow(sample_vals)) {
                     if (length(titre_all_trim$time_until_bleed) > 0) {
@@ -87,7 +87,7 @@ save(post_pred_fitted_exposed_uncert, file = here::here("data", "df", "fitted_li
 get_fitted_lines <- function(exposure) {
     post_pred_fitted_list <- list(); k <- 1
     for (i in 1:4) {
-        for (j in 1:4) {
+        for (j in 1:3) {
             
                 info3_levels_str <- paste0(info3_levels[j], " ", exposure)
                 file_name_type_2 <- paste0(file_name_type[j], "_", exposure)
@@ -135,7 +135,7 @@ require(rstan)
 get_fitted_diagnostics <- function(exposure) {
     diag_fitted_list <- list(); k <- 1
     for (i in 1:4) {
-        for (j in 1:4) {
+        for (j in 1:3) {
             
                 info3_levels_str <- paste0(info3_levels[j], " ", exposure)
                 file_name_type_2 <- paste0(file_name_type[j], "_", exposure)
