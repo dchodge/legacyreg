@@ -6,11 +6,11 @@ require(posterior)
 require(tidyr)
 ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-load(file = here::here("data", "df", "titre_all_naive.RData")) # titre_all_naive
-load(file = here::here("data", "df", "titre_all_exposed.RData")) # titre_all_exposed
+load(file = "data/df/titre_all_naive.RData") # titre_all_naive
+load(file = "data/df/titre_all_exposed.RData") # titre_all_exposed
 
-load(file = here::here("data", "df", "fitted_lines_naive.RData")) # post_pred_fitted_naive
-load(file = here::here("data", "df", "fitted_lines_exposed.RData")) # post_pred_fitted_exposed
+load(file = "data/df/fitted_lines_naive.RData") # post_pred_fitted_naive
+load(file = "data/df/fitted_lines_exposed.RData") # post_pred_fitted_exposed
 
 relabel_type_new_cl <- 
     c("Third vaccine dose_Infection naive" = "2 previous \nantigen exposures", #\n (All vaccines)", 
@@ -38,7 +38,7 @@ for (i in 1:4) {
             file_name_type_2 <- paste0(file_name_type[j], "_", exposure)
 
             temp_stanfit <- readRDS(here::here("outputs", "stanfits", paste0("fit_", file_name_var[i], "_", file_name_type_2, ".Rdata")))
-            post_fixed_eff <- temp_stanfit %>% as_draws(variables = c("boost_s", "boost_i", "wane_s", "t_p")) %>% as_draws_df
+            post_fixed_eff <- temp_stanfit$draws() %>% as_draws(variables = c("boost_s", "boost_i", "wane_s", "t_p")) %>% as_draws_df
         
             post_fitted_list[[k]] <- post_fixed_eff %>% mutate(info2 = info2_levels[i],  type = info3_levels[j], exposure_type = exposure) 
             k <- k + 1

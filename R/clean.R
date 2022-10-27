@@ -129,4 +129,4 @@ everything_times <- bind_rows(bleed_times_full, roche_times_full, vac_times_full
 # People with odd entries people
 vac_data_problem_id <- c("212", "341", "348", "358", "376", "717", "713", "707", "712", "715")
 everything_times <- everything_times %>% filter(!elig_study_id %in% vac_data_problem_id)
-save(everything_times, file = here::here("data", "df", "everything_long.RData"))
+save(everything_times, file = "data/df/everything_long.RData")

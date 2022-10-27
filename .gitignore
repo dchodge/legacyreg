@@ -6,3 +6,4 @@
 /outputs/stan_fits_tim
 /outputs/stanfits
 /outputs/posterior_predictives
+/src/stan/two_line_model

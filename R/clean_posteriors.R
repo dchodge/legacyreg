@@ -47,8 +47,8 @@ get_fitted_lines_uncert <- function(exposure) {
                 } else {
                     titre_all_trim <- titre_all_exposed %>% filter(info2 == info2_levels[i], type == info3_levels_str) %>% filter(!is.na(info3))
                 }
-                temp_stanfit <- readRDS(here::here("outputs", "stanfits", paste0("fit_", file_name_var[i], "_", file_name_type_2, ".Rdata")))
-                post_fixed_eff <- temp_stanfit %>% as_draws(variables = c("boost_i", "boost_s", "wane_s", "t_p")) %>% as_draws_df
+                  temp_stanfit <- readRDS(here::here("outputs", "stan_fits_tim", paste0("fit_", file_name_var[i], "_", file_name_type_2, ".Rdata")))
+                post_fixed_eff <- temp_stanfit$draws() %>% as_draws(variables = c("boost_i", "boost_s", "wane_s", "t_p")) %>% as_draws_df
                 sample_vals <- post_fixed_eff %>% .[1:100, ]
 
                 for (a in 1:nrow(sample_vals)) {
@@ -97,8 +97,8 @@ get_fitted_lines <- function(exposure) {
                 } else {
                     titre_all_trim <- titre_all_exposed %>% filter(info2 == info2_levels[i], type == info3_levels_str) %>% filter(!is.na(info3))
                 }
-                temp_stanfit <- readRDS(here::here("outputs", "stanfits", paste0("fit_", file_name_var[i], "_", file_name_type_2, ".Rdata")))
-                post_fixed_eff <- temp_stanfit %>% as_draws(variables = c("boost_i", "boost_s", "wane_s", "t_p")) %>% as_draws_df
+                temp_stanfit <- readRDS(here::here("outputs", "stan_fits_tim", paste0("fit_", file_name_var[i], "_", file_name_type_2, ".Rdata")))
+                post_fixed_eff <- temp_stanfit$draws() %>% as_draws(variables = c("boost_i", "boost_s", "wane_s", "t_p")) %>% as_draws_df
                 mean_vals <- post_fixed_eff %>% apply(2, mean)
 
                 if (length(titre_all_trim$time_until_bleed) > 0) {
