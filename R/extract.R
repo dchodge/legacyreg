@@ -290,3 +290,33 @@ extract_raw_data_pop_post_pred <- function() {
   
   return(out)
 }
+
+extract_panel_c_data <- function() {
+  
+  dt_gtr <- extract_all_pop_posteriors(structure_arg = "wide")
+  
+  dt_gtr[, titre_at_peak := boost_wane_fun(t_p, t_p, boost_i, boost_s, wane_s), 
+         by = c(".draw", "titre_type", "event_type", "exposure_type")]
+  
+  dt_gtr[, titre_100_days_after_peak := boost_wane_fun(t_p + 100,
+                                                       t_p, 
+                                                       boost_i,
+                                                       boost_s,
+                                                       wane_s), 
+         by = c(".draw", "titre_type", "event_type", "exposure_type")]
+  
+  dt_gtr[, gtr := titre_100_days_after_peak/titre_at_peak, 
+         by = c(".draw", "titre_type", "event_type", "exposure_type")]
+  
+  dt_gtr[, titre_at_peak_nat := 32*2^titre_at_peak, c(".draw", "titre_type", 
+                                                      "event_type", "exposure_type")]
+  
+  dt_gtr[, `:=` (gtr_me = quantile(gtr, 0.5),
+                 titre_at_peak_nat_me = quantile(titre_at_peak_nat, 0.5)),
+         by = c("titre_type", "event_type", "exposure_type")]
+  
+  dt_gtr_plot <- update_labels_panel_c(dt_gtr)
+  
+  return(dt_gtr_plot)
+}
+

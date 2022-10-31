@@ -5,16 +5,10 @@ library(data.table)
 library(ggh4x)
 library(ggridges)
 library(lemon)
+library(R.utils)
 
 # sourcing functions file
-source("R/extract.R")
-source("R/fit.R")
-source("R/plot.R")
-source("R/process.R")
-source("R/simulate.R")
-source("R/stan.R")
-source("R/subset.R")
-source("R/summarise.R")
+sourceDirectory("R/")
 
 ## Load model data
 load(file = here::here("data", "df", "titre_all_naive.RData")) # titre_all_naive
