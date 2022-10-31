@@ -40,8 +40,8 @@ parameters {
   //--- parameters for the boost/wane model
   // population-level parameters
   real<lower = 0> t_p; // timing of peak parameter
-  real<lower = 0, upper = 7> boost_i; // initial titre value
-  real boost_s; // gradient of boost parameter
+  real boost_i; // initial titre value
+  real<lower = 0> boost_s; // gradient of boost parameter
   real<upper = 0> wane_s; // gradient of wane parameter
   
   // individual-level parameters, same interpretations as population-level parameters
@@ -62,6 +62,12 @@ parameters {
   real<lower = 0> sigma_b_s;
   real<lower = 0> sigma_w;
   real<lower = 0> sigma;
+
+  // real sigma_t_p;
+  // real sigma_b_i;
+  // real sigma_b_s;
+  // real sigma_w;
+  // real<lower = 0> sigma;
 }
 
 transformed parameters{
@@ -114,10 +120,10 @@ model {
 
   //--- priors
   // population-level priors
-  t_p ~ normal(20, 3.5);
-  boost_i ~ normal(3.5, 2.5) T[0, 7];
-  boost_s ~ normal(0.25, 1);
-  wane_s ~ normal(-0.05, 0.1) T[, 0];
+  t_p ~ normal(20, 3.0);
+  boost_i ~ normal(3.5, 2.5);
+  boost_s ~ normal(0.02, 0.05) T[0, ];
+  wane_s ~ normal(-0.02, 0.05) T[, 0];
   
   // old priors
   // t_p ~ uniform(0, 40);
@@ -138,10 +144,15 @@ model {
   z_w_s ~ std_normal();
 
   // priors for noise parameters
-  sigma_t_p ~ normal(0, 3) T[0,];
-  sigma_b_i ~ normal(0, 3) T[0,];
-  sigma_b_s ~ normal(0, 1) T[0,];
-  sigma_w   ~ normal(0, 0.2) T[0,];
+  // sigma_t_p ~ normal(0, 9) T[0,];
+  // sigma_b_i ~ normal(0, 3) T[0,]; 
+  // sigma_b_s ~ normal(0, 0.5) T[0,];
+  // sigma_w   ~ normal(0, 0.5) T[0,];
+  
+  sigma_t_p ~ cauchy(0, 5) T[0,];
+  sigma_b_i ~ cauchy(0, 5) T[0,]; 
+  sigma_b_s ~ cauchy(0, 0.5) T[0,];
+  sigma_w   ~ cauchy(0, 0.5) T[0,];
     
   sigma ~ normal(0, 2) T[0,];
 }

@@ -73,6 +73,7 @@ extract_posterior_draws <- function(fit,
 extract_posterior_pred_samples <- function(i, j, k,
                                            time_range = seq(0, 200, 1),
                                            ind_flag,
+                                           n_samples = 500,
                                            by_args = c()) {
   # load fit
   fit_current <- extract_saved_fit(i, j, k)
@@ -85,7 +86,7 @@ extract_posterior_pred_samples <- function(i, j, k,
   # simulate trajectories
   dt_posterior_pred <- simulate_trajectories(time_range, 
                                              dt_posterior_wide,
-                                             500,
+                                             n_samples,
                                              ind_flag,
                                              by_args)
   
@@ -134,6 +135,10 @@ extract_all_pop_posteriors <- function(structure_arg = structure_arg) {
           
           dt_posterior_current[, fit_type := fit_name]
           
+          dt_posterior_current[, `:=` (titre_type = titre_type_options[i_arg],
+                                       event_type = event_type_options[j_arg],
+                                       exposure_type = exposure_type_options[k])]
+          
           dt_posterior_all <- rbind(dt_posterior_current, 
                                     dt_posterior_all)
           
@@ -144,7 +149,7 @@ extract_all_pop_posteriors <- function(structure_arg = structure_arg) {
   return(dt_posterior_all)
 }
 
-extract_all_pop_post_preds <- function(time_range) {
+extract_all_pop_post_preds <- function(time_range, n_samples) {
 
   dt_out <- data.table()
 
@@ -154,6 +159,7 @@ extract_all_pop_post_preds <- function(time_range) {
 
         dt_current <- extract_posterior_pred_samples(i, j, k,
                                                      time_range,
+                                                     n_samples,
                                                      ind_flag = FALSE,
                                                      by_args = c())
 
@@ -212,56 +218,9 @@ extract_all_ind_posterior_preds <- function(by_args = c()) {
   return(dt_posterior_all)
 }
 
-# extract_all_pop_post_preds <- function(time_range) {
-#   dt_posterior_all <- data.table()
-# 
-#   for(i_arg in 1:4) {
-#     for(j_arg in 1:4) {
-#       for(k in 1:2)     {
-# 
-#         exposure_arg = exposure_loop[k]
-#         file_name_type_2 <- paste0(file_name_type[j_arg], "_", exposure_arg)
-#         
-#         
-#         if(j_arg != 1) {
-#           adjust_times <- TRUE
-#         } else if (j_arg == 1) {
-#           adjust_times <- FALSE
-#         }
-#         
-#         dt_current <- subset_data(i_arg, j_arg, exposure_arg,adjust_times)
-# 
-#         if(nrow(dt_current) == 0) {
-#           next
-#         } else {
-# 
-#           fit_current <- extract_saved_fit(i_arg, j_arg, k)
-#           dt_posterior_current <- extract_posterior_pred_samples(i_arg,
-#                                                                  j_arg,
-#                                                                  k,
-#                                                                  time_range,
-#                                                                  ind_flag = FALSE,
-#                                                                  by_args = "fit_type")
-# 
-#           dt_posterior_summary <- summarise_trajectories(dt_posterior_current)
-# 
-#           dt_posterior_all <- rbind(dt_posterior_summary,
-#                                     dt_posterior_all)
-# 
-# 
-#           dt_posterior_pred[, `:=` (titre_type = titre_type_options[i],
-#                                     event_type = event_type_options[j],
-#                                     exposure_type = exposure_type_options[k])]
-#         }
-#       }
-#     }
-#   }
-#   return(dt_posterior_all)
-# }
-
 extract_all_raw_data <- function() {
   
-  dt_all_raw_data <- data.table()
+  out <- data.table()
   for(i_arg in 1:4) {
     for(j_arg in 1:4) {
       for(k in 1:2)     {
@@ -283,10 +242,49 @@ extract_all_raw_data <- function() {
                              event_type = event_type_options[j_arg],
                              exposure_type = exposure_type_options[k])]
           
-          dt_all_raw_data <- rbind(dt_current, dt_all_raw_data)
+          out <- rbind(dt_current, out)
         }
       }
     }
   }
-  return(dt_all_raw_data)
+  return(out)
+}
+
+extract_pop_post_pred_plot_data <- function(time_range = seq(0, 150, 1)) {
+  
+  dt_pop_post_preds <- extract_all_pop_post_preds(time_range)
+  
+  out <- summarise_trajectories(dt_pop_post_preds, 
+                                ind_flag = FALSE)
+  
+  out[,  `:=` (me_nat = 32*2^me,
+               lo_nat = 32*2^lo,
+               hi_nat = 32*2^hi)]
+  
+  
+  out[, `:=` (titre_type = fct_relevel(titre_type, c("Wildtype")),
+              event_type = fct_relevel(event_type, c("Vaccination")),
+              exposure_type = fct_relevel(exposure_type, c("Naive")))]
+  
+  return(out)
+}
+
+extract_raw_data_pop_post_pred <- function() {
+  
+  dt_raw_data <- extract_all_raw_data()
+  
+  out <- dt_raw_data[, c("time_until_bleed", "info3", 
+                         "titre_type", "event_type", 
+                         "exposure_type")]
+  setnames(out, 
+           c("time_until_bleed", "info3"), 
+           c("t", "observed_titre"))
+  
+  out[, observed_titre_nat := 32*2^(observed_titre)]
+  
+  out[, `:=` (titre_type = fct_relevel(titre_type, c("Wildtype")),
+              event_type = fct_relevel(event_type, c("Vaccination")),
+              exposure_type = fct_relevel(exposure_type, c("Naive")))]
+  
+  return(out)
 }

@@ -13,8 +13,23 @@ p_all_pop_posteriors <- dt_pop_posterior_draws[parameter %in% pop_level_params] 
   facet_wrap(~parameter, scales = "free") +
   theme_minimal()
 
+p_all_noise_posteriors <- dt_pop_posterior_draws[parameter %like% "sigma"] %>% 
+  ggplot() + 
+  geom_density_ridges(aes(x = value,
+                          y = factor(fit_type),
+                          fill = parameter),
+                      alpha = 0.5) +
+  facet_wrap(~parameter, scales = "free") +
+  theme_minimal()
+
 ggsave("outputs/figs_tim/all_pop_posteriors.pdf",
        p_all_pop_posteriors,
+       height = 12,
+       width = 12,
+       bg = "white")
+
+ggsave("outputs/figs_tim/all_noise_posteriors.pdf",
+       p_all_noise_posteriors,
        height = 12,
        width = 12,
        bg = "white")
