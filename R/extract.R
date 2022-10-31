@@ -250,9 +250,11 @@ extract_all_raw_data <- function() {
   return(out)
 }
 
-extract_pop_post_pred_plot_data <- function(time_range = seq(0, 150, 1)) {
+extract_pop_post_pred_plot_data <- function(time_range = seq(0, 150, 1),
+                                            n_samples) {
   
-  dt_pop_post_preds <- extract_all_pop_post_preds(time_range)
+  dt_pop_post_preds <- extract_all_pop_post_preds(time_range,
+                                                  n_samples = n_samples)
   
   out <- summarise_trajectories(dt_pop_post_preds, 
                                 ind_flag = FALSE)

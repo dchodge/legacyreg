@@ -31,3 +31,12 @@ file_name_type <- c("vac3", "ba1", "ba2", "ba5")
 
 # defining the possible exposure types - needed for the big loop to work
 exposure_loop <- c("naive", "exposed")
+
+# defining the population level parameters
+pop_level_params <- c("t_p", "boost_i", "boost_s", "wane_s")
+
+# defining the options for the various covariate categories
+titre_type_options <- c("Wildtype", "BA.1", "BA.2", "BA.5")
+event_type_options <- c("Vaccination", "BA.1 infection",
+                        "BA.2 infection", "BA.5 infection")
+exposure_type_options <- c("Naive", "Exposed")
