@@ -259,9 +259,9 @@ extract_pop_post_pred_plot_data <- function(time_range = seq(0, 150, 1),
   out <- summarise_trajectories(dt_pop_post_preds, 
                                 ind_flag = FALSE)
   
-  out[,  `:=` (me_nat = 32*2^me,
-               lo_nat = 32*2^lo,
-               hi_nat = 32*2^hi)]
+  out[,  `:=` (me_nat = 20*2^me,
+               lo_nat = 20*2^lo,
+               hi_nat = 20*2^hi)]
   
   
   out[, `:=` (titre_type = fct_relevel(titre_type, c("Wildtype")),
@@ -282,7 +282,7 @@ extract_raw_data_pop_post_pred <- function() {
            c("time_until_bleed", "info3"), 
            c("t", "observed_titre"))
   
-  out[, observed_titre_nat := 32*2^(observed_titre)]
+  out[, observed_titre_nat := 20*2^(observed_titre)]
   
   out[, `:=` (titre_type = fct_relevel(titre_type, c("Wildtype")),
               event_type = fct_relevel(event_type, c("Vaccination")),
@@ -308,7 +308,7 @@ extract_panel_c_data <- function() {
   dt_gtr[, gtr := titre_100_days_after_peak/titre_at_peak, 
          by = c(".draw", "titre_type", "event_type", "exposure_type")]
   
-  dt_gtr[, titre_at_peak_nat := 32*2^titre_at_peak, c(".draw", "titre_type", 
+  dt_gtr[, titre_at_peak_nat := 20*2^titre_at_peak, c(".draw", "titre_type", 
                                                       "event_type", "exposure_type")]
   
   dt_gtr[, `:=` (gtr_me = quantile(gtr, 0.5),

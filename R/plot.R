@@ -100,90 +100,171 @@ plot_panel_a <- function() {
     geom_segment(aes(x = 2, y = 5*2^6, xend = 22, yend = 5*2^6), linetype = "dashed", 
                  color = "gray30") +
     geom_richtext(aes(x = 115, y = 5*2^5, label = "Titre wane"), size = label_text_size, angle = 90) +
-    labs(x = "Days post infection", y = "Titre value") +
+    labs(x = "Days post infection", y = "Titre value", tag = "A") +
     theme_light()
   
   return(p_out)
 }
 
-plot_panel_b <- function(dt_pop_post_preds_sum, 
-                         dt_raw_data_pop_plot) {
+plot_panel_b <- function(dt_in_posterior_pred_draws, 
+                         dt_in_raw_data) {
+  
+  #--- no idea why, but using geom_hline breaks this plot, so I've just made
+  #--- some artificial data to replicate the horizontal lines
+  dt_h_line_data_1 <- data.table(x = seq(0, 150, 1), 
+                                 y = 40)
+  
+  dt_h_line_data_2 <- data.table(x = seq(0, 150, 1), 
+                                 y = 2560)
+  
+  dt_plot <- dt_in_posterior_pred_draws[t <= 150 & 
+                                        !event_type == "BA.5 infection"]
   
   p_out <- ggplot() + 
-    geom_ribbon(data = dt_pop_post_preds_sum[!event_type == "BA.5 infection"],
+    geom_ribbon(data = dt_plot,
                 aes(x = t,
                     ymin = lo_nat,
                     ymax = hi_nat,
-                    fill = titre_type, group = interaction(titre_type, event_type, exposure_type)),
+                    fill = titre_type, 
+                    group = titre_type),
                 alpha = 0.5, show.legend = FALSE) +
-    geom_line(data = dt_pop_post_preds_sum[!event_type == "BA.5 infection"],
+    geom_line(data = dt_plot,
               aes(x = t,
                   y = me_nat,
-                  group = interaction(titre_type, event_type, exposure_type)),
-              alpha = 0.75, linetype = "dashed") +
-    geom_point(data = dt_raw_data_pop_plot[t <= 150],
+                  group = titre_type),
+              alpha = 0.75, colour = "white", linetype = "dashed") +
+    geom_point(data = dt_in_raw_data[t <= 150],
                aes(x = t,
                    y = observed_titre_nat,
                    colour = titre_type,
-                   group = titre_type), alpha = 0.15)  +
+                   group = titre_type), alpha = 0.05)  +
     labs(fill = "Titre type", colour = "Titre type",
          x = "Days since event (infection or vaccination)",
-         y = "Titre value") +
+         y = "Titre value",
+         tag = "B") +
     guides(color = guide_legend(override.aes = list(alpha = 1))) +
     scale_y_continuous(trans = "log2",
                        breaks = c(40, 80, 160, 320, 640, 1280, 2560),
                        labels = c(expression(""<=40),
                                   "80", "160", "320", "640", "1280",
                                   expression("">=2560))) +
-    coord_cartesian(ylim = c(40, 8192)) +
-    # geom_hline(aes(yintercept = 40), linetype = "dashed", colour = "gray30") +
-    # geom_hline(aes(yintercept = 2560), linetype = "dashed", colour = "gray30") + 
-    facet_grid(event_type ~ exposure_type, scales = "fixed") +
-    theme_light() + 
-    theme(legend.position = "bottom") 
+    geom_line(data = dt_h_line_data_1, aes(x = x,
+                                           y = y), 
+              linetype = "dashed", colour = "gray30") +
+    geom_line(data = dt_h_line_data_2, aes(x = x,
+                                           y = y),
+              linetype = "dashed", colour = "gray30") + 
+    coord_cartesian(ylim = c(NA, 8192)) +
+    facet_grid(event_type ~ exposure_type) + 
+    theme_light() +
+    scale_fill_lancet() + 
+    scale_color_lancet()
+    # theme(legend.position = "bottom")
   
   return(p_out)
 }
 
 plot_panel_c <- function(dt_in) {
   
-  p_out <- dt_gtr_plot[!event_type == "BA.5 infection"] %>% 
+  p_out <- dt_in[!event_type == "BA.5 infection" & .draw <= 1250] %>% 
     ggplot() + 
-    # geom_bin2d(aes(x = gtr, y = titre_at_peak_nat, colour = event_type,
-    #                shape = exposure_type), alpha = 0.05, bins = 500) +
     geom_point(aes(x = gtr,
                    y = titre_at_peak_nat,
-                   colour = event_type), alpha = 0.05) +
+                   colour = event_type), alpha = 0.025) +
     geom_point(aes(x = gtr_me,
                    y = titre_at_peak_nat_me,
                    shape = exposure_type)) +
     scale_shape(solid = FALSE) + 
-    # geom_density_2d(aes(x = gtr, 
-    #                     y = titre_at_peak_nat,
-    #                     colour = event_type)) + 
-    geom_hline(aes(yintercept = 40), linetype = "dashed", colour = "gray30") + 
-    geom_hline(aes(yintercept = 2560), linetype = "dashed", colour = "gray30") + 
-    facet_grid(`Number of exposures` ~ titre_type) +
-    scale_y_continuous(trans = "log2") +
-    theme_light() + 
-    # breaks = c(40, 80, 160, 320, 640, 1280, 2560),
-    # labels = c("40", "80", "160", "320", "640", "1280", "2560")) +
+    geom_hline(aes(yintercept = 40), linetype = "dashed", colour = "gray30") +
+    geom_hline(aes(yintercept = 2560), linetype = "dashed", colour = "gray30") +
     labs(x = "GTR between peak titre and titre value 100 days after peak",
          y = "Titre value at peak",
          colour = "Most recent exposure",
-         shape = "Infection history") + 
-    theme(legend.position = "bottom",
-          legend.direction = "horizontal",
-          legend.box = "vertical",
-          # legend.margin = margin(-10),
-          legend.spacing.y = unit(-0.25, "cm")) +
+         shape = "Infection history",
+         tag = "C") + 
+    facet_grid(`Number of exposures` ~ titre_type) + 
+    theme_light() + 
+    theme(legend.box = "vertical") +
     scale_y_continuous(trans = "log2", 
                        breaks = c(40, 80, 160, 320, 640, 1280, 2560),
                        labels = c(expression(""<=40),
                                   "80", "160", "320", "640", "1280",
                                   expression("">=2560))) +
     guides(color = guide_legend(override.aes = list(alpha = 1), order = 1),
-           shape = guide_legend(order = 2))
+           shape = guide_legend(order = 2)) 
+  
+  return(p_out)
+}
+
+#--- plotting each posterior predictive trajectory against the data
+#--- in separate panels
+
+plot_panel_supp_preds <- function(dt_in_posterior_pred_draws, 
+                                  dt_in_raw_data,
+                                  event_type_arg,
+                                  exposure_type_arg,
+                                  title_arg,
+                                  subtitle_arg) {
+  
+  dt_pred_plot <- dt_in_posterior_pred_draws[event_type == event_type_arg & 
+                                             exposure_type == exposure_type_arg]
+  
+  
+  dt_data_plot <- dt_in_raw_data[event_type == event_type_arg & 
+                                 exposure_type == exposure_type_arg]
+  
+  
+  t_max <- dt_data_plot[, max(t)]
+  
+  #--- no idea why, but using geom_hline breaks this plot, so I've just made
+  #--- some artificial data to replicate the horizontal lines
+  dt_h_line_data_1 <- data.table(x = seq(0, t_max, 1), 
+                                 y = 40)
+  
+  dt_h_line_data_2 <- data.table(x = seq(0, t_max, 1), 
+                                 y = 2560)
+  
+  p_out <- ggplot() + 
+    geom_ribbon(data = dt_pred_plot[t <= t_max],
+                aes(x = t,
+                    ymin = lo_nat,
+                    ymax = hi_nat,
+                    fill = titre_type, 
+                    group = titre_type), alpha = 0.7,
+                show.legend = FALSE) +
+    geom_line(data = dt_pred_plot[t <= t_max],
+              aes(x = t,
+                  y = me_nat,
+                  group = titre_type),
+              alpha = 0.75, colour = "white", linetype = "dashed") +
+    geom_point(data = dt_data_plot,
+               aes(x = t,
+                   y = observed_titre_nat,
+                   colour = titre_type,
+                   group = titre_type))  +
+    labs(fill = "Titre type", colour = "Titre type",
+         x = "Days since event (infection or vaccination)",
+         y = "Titre value",
+         title = title_arg,
+         subtitle = subtitle_arg) +
+    guides(color = guide_legend(override.aes = list(alpha = 1))) +
+    scale_y_continuous(trans = "log2",
+                       breaks = c(40, 80, 160, 320, 640, 1280, 2560),
+                       labels = c(expression(""<=40),
+                                  "80", "160", "320", "640", "1280",
+                                  expression("">=2560))) +
+    geom_line(data = dt_h_line_data_1, aes(x = x,
+                                           y = y), 
+              linetype = "dashed", colour = "gray30") +
+    geom_line(data = dt_h_line_data_2, aes(x = x,
+                                           y = y),
+              linetype = "dashed", colour = "gray30") + 
+    coord_cartesian(ylim = c(NA, 8192)) +
+    facet_wrap(~titre_type, nrow = 1) +
+    theme_light() +
+    theme(legend.position = "none") + 
+    scale_fill_lancet() + 
+    scale_color_lancet()
   
   return(p_out)
 }
