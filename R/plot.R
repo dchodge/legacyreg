@@ -268,3 +268,44 @@ plot_panel_supp_preds <- function(dt_in_posterior_pred_draws,
   
   return(p_out)
 }
+
+plot_prior_predictive <- function(time_range = seq(0, 300, 1),
+                                  n_samples) {
+  
+  dt_pop_priors <- sample_pop_priors(k = n_samples)
+  
+  dt_pop_prior_pred <- simulate_trajectories(time_range,
+                                             dt_pop_priors,
+                                             n_samples = n_samples, 
+                                             ind_flag = FALSE,
+                                             by_args = c())
+  
+  dt_pop_prior_pred[,  exp_titre := 20*2^exp_titre, by = t]
+  
+  dt_pop_prior_pred_sum <- summarise_trajectories(dt_pop_prior_pred, 
+                                                  ind_flag = FALSE, 
+                                                  by_args = c())
+  
+  p_out <- ggplot() +
+    geom_ribbon(data = dt_pop_prior_pred_sum,
+                aes(x = t, ymin = lo, ymax = hi), 
+                alpha = 0.1, fill = "dodgerblue") +
+    geom_line(data = dt_pop_prior_pred_sum,
+              aes(x = t, y = me), 
+              linetype = "dashed", colour = "dodgerblue") +
+    geom_line(data = dt_pop_prior_pred[.draw %in% 1:100],
+              aes(x = t, y = exp_titre, group = .draw), 
+              alpha = 0.05) +
+    geom_hline(aes(yintercept = 40), linetype = "dashed") +
+    geom_hline(aes(yintercept = 2560), linetype = "dashed") +
+    scale_y_continuous(trans = "log2",
+                       breaks = c(40, 80, 160, 320, 640, 1280, 2560),
+                       labels = c(expression(""<=40),
+                                  "80", "160", "320", "640", "1280",
+                                  expression("">=2560))) +
+    coord_cartesian(xlim = c(0, 150), 
+                    ylim = c(0.5, 16384)) +
+    labs(x = "Time since event", y = "Titre value")
+  
+  return(p_out)
+}
