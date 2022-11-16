@@ -64,14 +64,14 @@ p_supp_6 <- plot_panel_supp_preds(dt_pop_post_preds_sum,
 figure_supplementary_post <- (p_supp_1 + p_supp_2)/(p_supp_3 + p_supp_4)/(p_supp_5 + p_supp_6)
 
 #--- saving PDF version
-ggsave("outputs/figs_tim/figure_supp_2.pdf",
+ggsave("outputs/figs_tim/figure_S2.pdf",
        figure_supplementary_post,
        width = 10,
        height = 12,
        bg = "white")
 
 #--- saving PNG version
-ggsave("outputs/figs_tim/figure_supp_2.png",
+ggsave("outputs/figs_tim/figure_S2.png",
        figure_supplementary_post,
        width = 10,
        height = 12,

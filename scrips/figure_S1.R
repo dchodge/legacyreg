@@ -12,8 +12,8 @@ library(patchwork)
 
 source("scrips/setup.R")
 
-#--- plotting panel A 
-p_a <- plot_panel_a()
+# #--- plotting panel A 
+# p_a <- plot_panel_a()
 
 #--- plotting panel B
 dt_pop_post_preds_sum <- extract_pop_post_pred_plot_data(time_range = seq(0, 300, 1),
@@ -25,33 +25,30 @@ dt_raw_data_pop_plot <- update_labels_panel_b(dt_raw_data_pop_plot)
 
 p_b <- plot_panel_b(dt_pop_post_preds_sum,
                     dt_raw_data_pop_plot,
-                    units_nat = TRUE)
+                    units_nat = FALSE,
+                    title_arg = "A")
 
 #--- plotting panel C
 dt_panel_c_data <- extract_panel_c_data()
 p_c <- plot_panel_c(dt_panel_c_data,
-                    units_nat = TRUE)
+                    units_nat = FALSE,
+                    title_arg = "B") 
 
 layout_matrix <- c("A
-                    B
-                    B
-                    C
-                    C")
+                    B")
 
-p_figure_1 <- p_a/p_b/p_c + 
+p_figure_1 <- p_b/p_c + 
   plot_layout(design = layout_matrix)
-  
-# plot_grid(p_a, p_b, ncol = 1, rel_heights = c(0.6, 1))
 
 #--- saving PDF version
-ggsave("outputs/figs_tim/figure_1.pdf",
+ggsave("outputs/figs_tim/figure_S1.pdf",
        p_figure_1,
        width = 8,
-       height = 14,
+       height = 12,
        bg = "white")
 
 #--- saving PNG version
-ggsave("outputs/figs_tim/figure_1.png",
+ggsave("outputs/figs_tim/figure_S1.png",
        p_figure_1,
        width = 8,
        height = 12,

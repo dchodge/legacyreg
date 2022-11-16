@@ -199,7 +199,8 @@ extract_all_ind_posterior_preds <- function(by_args = c()) {
           
           # fit_current <- extract_saved_fit(i_arg, j_arg, k)
           dt_posterior_current <- extract_posterior_pred_samples(i_arg, 
-                                                                 j_arg,
+                                                                 j_arg, 
+                                                                 time_range = seq(0, 300, 1),
                                                                  k, 
                                                                  ind_flag = TRUE,
                                                                  by_args = c())
@@ -298,21 +299,26 @@ extract_panel_c_data <- function() {
   dt_gtr[, titre_at_peak := boost_wane_fun(t_p, t_p, boost_i, boost_s, wane_s), 
          by = c(".draw", "titre_type", "event_type", "exposure_type")]
   
-  dt_gtr[, titre_100_days_after_peak := boost_wane_fun(t_p + 100,
-                                                       t_p, 
-                                                       boost_i,
-                                                       boost_s,
-                                                       wane_s), 
+  dt_gtr[, titre_100_days_after_peak := boost_wane_fun(t_p + 100, t_p, boost_i, boost_s, wane_s), 
          by = c(".draw", "titre_type", "event_type", "exposure_type")]
   
   dt_gtr[, gtr := titre_100_days_after_peak/titre_at_peak, 
          by = c(".draw", "titre_type", "event_type", "exposure_type")]
   
-  dt_gtr[, titre_at_peak_nat := 20*2^titre_at_peak, c(".draw", "titre_type", 
-                                                      "event_type", "exposure_type")]
+  dt_gtr[, titre_at_peak_nat := 20*2^titre_at_peak, c(".draw", "titre_type", "event_type", "exposure_type")]
   
   dt_gtr[, `:=` (gtr_me = quantile(gtr, 0.5),
-                 titre_at_peak_nat_me = quantile(titre_at_peak_nat, 0.5)),
+                 gtr_lo = quantile(gtr, 0.0275),
+                 gtr_hi = quantile(gtr, 0.975),
+                 titre_at_peak_me = quantile(titre_at_peak, 0.5),
+                 titre_at_peak_lo = quantile(titre_at_peak, 0.0275),
+                 titre_at_peak_hi = quantile(titre_at_peak, 0.975),
+                 wane_s_me = quantile(wane_s, 0.5),
+                 wane_s_lo = quantile(wane_s, 0.0275),
+                 wane_s_hi = quantile(wane_s, 0.975),
+                 titre_at_peak_nat_me = quantile(titre_at_peak_nat, 0.5),
+                 titre_at_peak_nat_lo = quantile(titre_at_peak_nat, 0.0275),
+                 titre_at_peak_nat_hi = quantile(titre_at_peak_nat, 0.975)),
          by = c("titre_type", "event_type", "exposure_type")]
   
   dt_gtr_plot <- update_labels_panel_c(dt_gtr)

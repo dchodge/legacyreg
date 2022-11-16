@@ -15,9 +15,7 @@ functions {
     if (t < t_p) { 
         mu = boost_i + boost_s * t; 
     } else {
-        mu = wane_s * (t - t_p) + 
-        boost_i +
-        boost_s * t_p; 
+        mu = wane_s * (t - t_p) + boost_i + boost_s * t_p; 
     }
     
     // returning only positive values or zeros
@@ -51,10 +49,10 @@ parameters {
   // vector[N_ind] boost_s_ind;
   // vector[N_ind] wane_s_ind;
 
-  vector[N_ind] z_p;
-  vector[N_ind] z_b_i;
-  vector[N_ind] z_s_i;
-  vector[N_ind] z_w_s;
+  vector[N_ind] z_p_ind;
+  vector[N_ind] z_b_i_ind;
+  vector[N_ind] z_s_i_ind;
+  vector[N_ind] z_w_s_ind;
 
   //--- measurement error parameters
   real<lower = 0> sigma_t_p;
@@ -79,10 +77,10 @@ transformed parameters{
   vector[N_ind] boost_s_ind;
   vector[N_ind] wane_s_ind;
 
-  t_p_ind  =  t_p + z_p*sigma_t_p;
-  boost_i_ind = boost_i + z_b_i*sigma_b_i;
-  boost_s_ind = boost_s + z_s_i*sigma_b_s;
-  wane_s_ind = wane_s + z_w_s*sigma_w;
+  t_p_ind  =  t_p + z_p_ind*sigma_t_p;
+  boost_i_ind = boost_i + z_b_i_ind*sigma_b_i;
+  boost_s_ind = boost_s + z_s_i_ind*sigma_b_s;
+  wane_s_ind = wane_s + z_w_s_ind*sigma_w;
   
   vector[N] titre_est;
   
@@ -125,12 +123,6 @@ model {
   boost_s ~ normal(0.02, 0.05) T[0, ];
   wane_s ~ normal(-0.02, 0.05) T[, 0];
   
-  // old priors
-  // t_p ~ uniform(0, 40);
-  // boost_i ~ uniform(0, 7);
-  // boost_s ~ uniform(0, 0.3);
-  // wane_s ~ uniform(-0.1, 0);
-  
   // centered parameterisation
   // t_p_ind ~ normal(t_p, sigma_t_p);
   // boost_i_ind ~ normal(boost_i, sigma_b_i);
@@ -138,21 +130,15 @@ model {
   // wane_s_ind ~ normal(wane_s, sigma_w);
   
   // non-centered parameterisation
-  z_p ~ std_normal();
-  z_b_i ~ std_normal();
-  z_s_i ~ std_normal();
-  z_w_s ~ std_normal();
+  z_p_ind ~ std_normal();
+  z_b_i_ind ~ std_normal();
+  z_s_i_ind ~ std_normal();
+  z_w_s_ind ~ std_normal();
 
-  // priors for noise parameters
-  // sigma_t_p ~ normal(0, 9) T[0,];
-  // sigma_b_i ~ normal(0, 3) T[0,]; 
-  // sigma_b_s ~ normal(0, 0.5) T[0,];
-  // sigma_w   ~ normal(0, 0.5) T[0,];
-  
-  sigma_t_p ~ cauchy(0, 5) T[0,];
-  sigma_b_i ~ cauchy(0, 5) T[0,]; 
-  sigma_b_s ~ cauchy(0, 0.5) T[0,];
-  sigma_w   ~ cauchy(0, 0.5) T[0,];
+  sigma_t_p ~ cauchy(0, 5);
+  sigma_b_i ~ cauchy(0, 5); 
+  sigma_b_s ~ cauchy(0, 0.5);
+  sigma_w   ~ cauchy(0, 0.5);
     
   sigma ~ normal(0, 2) T[0,];
 }

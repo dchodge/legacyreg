@@ -59,3 +59,18 @@ update_labels_panel_c <- function(dt_in) {
   
   return(dt_out)
 }
+
+update_exposure_event_labels <- function(dt_in) {
+  
+  dt_out <- copy(dt_in)
+  
+  dt_out[event_type == "Vaccination", event_type := "Third vaccine dose"]
+  
+  dt_out[exposure_type == "Naive", exposure_type := "Infection naive"]
+  dt_out[exposure_type == "Exposed", exposure_type := "Previously infected"]
+  
+  dt_out[, event_type := fct_relevel(event_type, "Third vaccine dose")]
+  
+  return(dt_out[])
+  
+}
