@@ -1,1 +1,10 @@
+.DS_Store
+.Rbuildignore
+.Rhistory
+.Rproj.user
 /data
+#/outputs/stan_fits_tim
+/outputs/stanfits
+/outputs/posterior_predictives
+/paper
+/src/stan/two_line_model
